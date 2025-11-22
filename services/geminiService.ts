@@ -1,5 +1,4 @@
-
-import { GoogleGenAI, Modality } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 import { PhotoStyle, BackgroundStyle, HairColor, HairStyle, OutfitStyle, ClothingColor, PoseStyle } from "../types";
 
 const getClient = () => {
@@ -279,16 +278,16 @@ CABELO: ${hairColor} / ${hairStyle}
           { text: promptText },
         ],
       },
-      config: {
-        responseModalities: [Modality.IMAGE],
-      },
     });
 
-    const part = response.candidates?.[0]?.content?.parts?.[0];
-    if (part && part.inlineData && part.inlineData.data) {
-        const blob = base64ToBlob(part.inlineData.data, 'image/png');
-        const url = URL.createObjectURL(blob);
-        return url;
+    if (response.candidates?.[0]?.content?.parts) {
+      for (const part of response.candidates[0].content.parts) {
+        if (part.inlineData && part.inlineData.data) {
+          const blob = base64ToBlob(part.inlineData.data, 'image/png');
+          const url = URL.createObjectURL(blob);
+          return url;
+        }
+      }
     }
     
     throw new Error("A IA não conseguiu processar a imagem. Tente uma foto diferente.");
