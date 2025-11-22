@@ -1,3 +1,4 @@
+
 import { GoogleGenAI } from "@google/genai";
 import { PhotoStyle, BackgroundStyle, HairColor, HairStyle, OutfitStyle, ClothingColor, PoseStyle } from "../types";
 
@@ -31,9 +32,15 @@ const resizeImage = (base64Str: string, maxWidth = 2048): Promise<string> => {
       let width = img.width;
       let height = img.height;
       
-      if (width > maxWidth) {
-        height *= maxWidth / width;
-        width = maxWidth;
+      // Keep aspect ratio but limit max dimension
+      if (width > maxWidth || height > maxWidth) {
+        if (width > height) {
+          height *= maxWidth / width;
+          width = maxWidth;
+        } else {
+          width *= maxWidth / height;
+          height = maxWidth;
+        }
       }
       
       const canvas = document.createElement('canvas');
@@ -41,7 +48,12 @@ const resizeImage = (base64Str: string, maxWidth = 2048): Promise<string> => {
       canvas.height = height;
       const ctx = canvas.getContext('2d');
       ctx?.drawImage(img, 0, 0, width, height);
-      resolve(canvas.toDataURL('image/jpeg', 0.90)); 
+      // High quality JPEG 0.95
+      resolve(canvas.toDataURL('image/jpeg', 0.95)); 
+    };
+    img.onerror = () => {
+       // Fallback if image fails to load (unlikely if base64 is valid)
+       resolve(base64Str);
     };
   });
 };
@@ -140,6 +152,7 @@ const getBackgroundDescription = (style: BackgroundStyle): string => {
     case BackgroundStyle.REAL_LIBRARY: return "Real Library: Bookshelves, quiet atmosphere, academic vibe.";
     case BackgroundStyle.LUXURY_CAR: return "Luxury Car Interior: Leather seats, dashboard details, car window view.";
     case BackgroundStyle.PRO_GREY: return "Pro Grey: Professional solid grey background for headshots.";
+    case BackgroundStyle.URBAN_OUTDOOR: return "Urban Outdoor: City street during day, modern architecture, clean sidewalk.";
     default: return style;
   }
 }
@@ -147,6 +160,7 @@ const getBackgroundDescription = (style: BackgroundStyle): string => {
 const getPhotoStyleDescription = (style: PhotoStyle): string => {
   switch (style) {
     case PhotoStyle.HYPERFACE_ULTRA_2_0: return "HYPERFACE ULTRA 2.0: The Definitive 16K Hyper-Realistic Engine. Zero artifacts. Perfect identity.";
+    case PhotoStyle.INSTAGRAM_PRO: return "INSTAGRAM PRO: Warm tones, natural skin, clean aesthetic, perfect for Reels/social media.";
     case PhotoStyle.CELEBRITY_LOOK: return "CELEBRITY LOOK: High-end paparazzi or red carpet style. Glossy skin, star quality lighting.";
     case PhotoStyle.MODEL_TRANSFORM: return "MODEL TRANSFORM: High-fashion posing, sharp jawline emphasis, runway aesthetic.";
     case PhotoStyle.MAGAZINE_PORTRAIT: return "MAGAZINE PORTRAIT: Vogue/GQ Cover style. Bold texturing, perfect color grading.";
@@ -176,6 +190,8 @@ const getPhotoStyleDescription = (style: PhotoStyle): string => {
   }
 }
 
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 export const generateProfessionalHeadshot = async (
   base64Image: string,
   photoStyle: PhotoStyle,
@@ -191,7 +207,7 @@ export const generateProfessionalHeadshot = async (
   
   let processedImage = base64Image;
   // Resize large images to ensure processing speed and stability
-  if (base64Image.length > 500000) { 
+  if (base64Image.length > 800000) { // Approx 800KB threshold for resizing logic check
       processedImage = await resizeImage(base64Image);
   }
   const cleanBase64 = processedImage.replace(/^data:image\/(png|jpeg|jpg|webp|heic);base64,/, "");
@@ -201,99 +217,115 @@ export const generateProfessionalHeadshot = async (
   const styleDesc = getPhotoStyleDescription(photoStyle);
   const poseDesc = getPoseDescription(poseStyle);
 
+  // Optimized prompt to save tokens while maintaining instructions
   const promptText = `
-CORE DO HYPERFACE PRO — CONFIGURAÇÃO OFICIAL V12.0
+CORE HYPERFACE PRO V12
 
-OBJETIVO PRINCIPAL
-Gerar fotos totalmente novas a partir de 1 ou mais fotos enviadas pelo usuário, com:
-- mudança real das roupas
-- mudança total da pose
-- mudança completa do cenário
-- fidelidade máxima do rosto
-- estilo ultra realista 16K (qualidade padrão obrigatória)
-- possibilidade de trocar cores, roupas, estilos e cenários
-- sempre gerar imagem impecável de primeira
-- manter ZERO ruídos, deformações ou características incorretas
+OBJETIVO:
+Gerar fotos novas de 1+ pessoas com:
+- mudança de roupas, pose e cenário
+- fidelidade do rosto
+- estilo ultra realista 16K
+- zero deformações
 
-DETECÇÃO DE PESSOAS
-O sistema deve:
-- Detectar automaticamente quantas pessoas existem (1, 2, 3, 4 ou mais)
-- Identificar cada rosto individualmente
-- Recriar cada pessoa com fidelidade extrema (formato do rosto, olhos, pele, cabelo, barba, etc.)
-- Garantir que ninguém seja ignorado
+DETECÇÃO:
+- Identificar todos os rostos
+- Recriar cada pessoa com fidelidade (rosto, pele, cabelo)
 - Aplicar roupas e poses novas para todos
 
-MUDANÇA DE ROSTO ULTRA REALISTA
-- Nunca alterar cor dos olhos
-- Não mudar formato do rosto
-- Não mudar estilo de cabelo original
-- Manter 100% das características reais (foto nova, porém a mesma pessoa)
-- Sempre gerar rosto hiper realista e nítido em 16K
+REGRAS:
+- NÃO mudar cor dos olhos ou formato do rosto
+- MANTER características físicas
+- TROCAR ROUPA COMPLETAMENTE
+- TROCAR CENÁRIO COMPLETAMENTE
+- NOVA POSE OBRIGATÓRIA
 
-TROCA DE ROUPA — FUNCIONAMENTO CORRETO
-TODA foto gerada precisa trocar completamente a roupa.
-A roupa original deve ser ignorada e substituída.
-
-CENÁRIOS — TOTALMENTE NOVOS
-Nunca manter o cenário original.
-
-MUDANÇA DE POSE — OBRIGATÓRIO
-O sistema NUNCA deve manter a pose original da foto.
-Pose deve ser recriada do zero.
-
-QUALIDADE MÁXIMA — PADRÃO 16K
-Todas as imagens geradas devem sair automaticamente em:
-- 16K Ultra HD
-- Nitidez máxima
-- Upscale automático após gerar
-- Zero compressão
-- Zero ruído
-
-ROBUSTEZ E CORREÇÃO DE ERROS
-Corrigir:
-- Falha ao gerar com mais de uma pessoa
-- Falha em roupas não trocarem
-- Falha em cenários não mudarem
-- Falha em poses repetidas
-- Falha em manter a mesma face da foto
-- Falha de qualidade baixa
-- Falha de carregar fotos grandes
-
----
-CONFIGURAÇÃO ATUAL (Aplicar Obrigatóriamente):
-ESTILO FOTO: ${styleDesc}
+CONFIGURAÇÃO:
+ESTILO: ${styleDesc}
 ROUPA: ${outfitDesc}
 CENÁRIO: ${bgDesc}
 POSE: ${poseDesc}
 CABELO: ${hairColor} / ${hairStyle}
----
 `;
 
-  try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-image',
-      contents: {
-        parts: [
-          { inlineData: { data: cleanBase64, mimeType: 'image/jpeg' } },
-          { text: promptText },
-        ],
-      },
-    });
+  let attempts = 0;
+  const maxAttempts = 5;
 
-    if (response.candidates?.[0]?.content?.parts) {
-      for (const part of response.candidates[0].content.parts) {
-        if (part.inlineData && part.inlineData.data) {
-          const blob = base64ToBlob(part.inlineData.data, 'image/png');
-          const url = URL.createObjectURL(blob);
-          return url;
+  while (attempts < maxAttempts) {
+    try {
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash-image',
+        contents: {
+          parts: [
+            { inlineData: { data: cleanBase64, mimeType: 'image/jpeg' } },
+            { text: promptText },
+          ],
+        },
+      });
+
+      if (response.candidates?.[0]?.content?.parts) {
+        for (const part of response.candidates[0].content.parts) {
+          if (part.inlineData && part.inlineData.data) {
+            const blob = base64ToBlob(part.inlineData.data, 'image/png');
+            const url = URL.createObjectURL(blob);
+            return url;
+          }
         }
       }
-    }
-    
-    throw new Error("A IA não conseguiu processar a imagem. Tente uma foto diferente.");
+      
+      throw new Error("A IA não conseguiu processar a imagem. Tente uma foto diferente.");
 
-  } catch (error) {
-    console.error("Gemini Generation Error:", error);
-    throw error;
+    } catch (error: any) {
+      attempts++;
+      console.error(`Gemini Generation Attempt ${attempts} failed:`, error);
+
+      let isRateLimit = false;
+      let retryAfter = 0;
+
+      // Check for 429 or RESOURCE_EXHAUSTED in various ways
+      if (error.status === 429 || error.code === 429) isRateLimit = true;
+      
+      const msg = error.message || '';
+      if (msg.includes('RESOURCE_EXHAUSTED') || msg.includes('429') || msg.includes('quota')) {
+          isRateLimit = true;
+      }
+
+      // Try to parse "Please retry in X s" from the message string
+      const match = msg.match(/retry in ([\d\.]+)s/);
+      if (match && match[1]) {
+          retryAfter = parseFloat(match[1]) * 1000;
+      }
+
+      // Check structured details from the error object if available
+      if (error.details && Array.isArray(error.details)) {
+          const retryInfo = error.details.find((d: any) => d['@type']?.includes('RetryInfo'));
+          if (retryInfo?.retryDelay) {
+              const s = parseFloat(retryInfo.retryDelay.replace('s', ''));
+              if (!isNaN(s)) retryAfter = s * 1000;
+          }
+      }
+
+      if (isRateLimit && attempts < maxAttempts) {
+        // Calculate wait time: Use server suggestion or exponential backoff
+        // If server says 59s, we wait 59s + 1s buffer.
+        let waitTime = retryAfter > 0 ? retryAfter + 1000 : (5000 * Math.pow(2, attempts - 1));
+        
+        // Safety cap to avoid waiting forever (max 70s)
+        if (waitTime > 70000) waitTime = 70000;
+
+        console.warn(`Rate limit hit. Retrying in ${waitTime}ms...`);
+        await delay(waitTime);
+        continue;
+      }
+      
+      if (attempts === maxAttempts) {
+        if (isRateLimit) {
+          throw new Error("O servidor está com alta demanda (Cota excedida). Tente novamente em 1 minuto.");
+        }
+        throw error;
+      }
+      throw error;
+    }
   }
+  throw new Error("Erro desconhecido ao gerar imagem.");
 };

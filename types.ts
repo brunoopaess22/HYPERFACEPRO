@@ -114,6 +114,7 @@ export enum OutfitStyle {
 export enum PhotoStyle {
   HYPERFACE_ULTRA_2_0 = '⚡ HYPERFACE PRO V12 (Oficial)',
   AUTO_DECIDE = '✨ IA Decide (Melhor Estilo)',
+  INSTAGRAM_PRO = '📸 Pro Instagram / Reels (Clean)',
   CELEBRITY_LOOK = '🌟 Foto de Celebridade',
   MODEL_TRANSFORM = '📸 Transformar em Modelo',
   MAGAZINE_PORTRAIT = '📰 Retrato de Revista',
@@ -164,6 +165,7 @@ export enum BackgroundStyle {
   SUNNY_FIELD = '🌻 Campo Ensolarado',
   JAPANESE_GARDEN = '🌸 Jardim Japonês Realista',
   NIGHT_STREET = '🌃 Rua Urbana à Noite',
+  URBAN_OUTDOOR = '🏙️ Área Externa Urbana (Dia)',
   REAL_GYM = '💪 Academia Fitness Alto Padrão',
   PRO_BLUR = '💧 Fundo Esfumado Profissional',
   AESTHETICS_CLINIC = '✨ Estética / Dermatologia',
