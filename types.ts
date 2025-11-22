@@ -110,7 +110,6 @@ export enum OutfitStyle {
   BIKER_STYLE = '🏍️ Motoqueiro / Biker'
 }
 
-// Aesthetic / Camera / Lighting Style
 export enum PhotoStyle {
   HYPERFACE_ULTRA_2_0 = '⚡ HYPERFACE PRO V12 (Oficial)',
   AUTO_DECIDE = '✨ IA Decide (Melhor Estilo)',
@@ -142,7 +141,6 @@ export enum PhotoStyle {
   MOVIE_POSTER = '🎬 Poster de Filme'
 }
 
-// Physical Background Location
 export enum BackgroundStyle {
   AUTO_PREMIUM = '✨ Cenário Automático (IA Decide)',
   REAL_MUSTANG_SHELBY = '🏎️ Mustang Shelby GT500 (Dirigindo)',
@@ -182,16 +180,4 @@ export enum BackgroundStyle {
   REAL_LIBRARY = 'Biblioteca Real',
   LUXURY_CAR = 'Carro de Luxo (Genérico)',
   PRO_GREY = 'Fundo Neutro Cinza Profissional'
-}
-
-export interface GenerationOptions {
-  image: string;
-  photoStyle: PhotoStyle;
-  backgroundStyle: BackgroundStyle;
-  outfit: OutfitStyle;
-  clothingColor: ClothingColor;
-  hairColor: HairColor;
-  hairStyle: HairStyle;
-  poseStyle: PoseStyle;
-  extraSharpness: boolean;
 }
